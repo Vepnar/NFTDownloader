@@ -9,11 +9,15 @@ DISCLAIMER:
 License:
     The Python script is under the MIT license, All files downloaded are under a different / unknown license.
 
+TODO:
+    Add extra documentation
+
 Author: Arjan de Haan (Vepnar)
 """
+import os
 import json
+import time
 import requests
-import argparse
 from enum import Enum, auto
 
 
@@ -33,6 +37,7 @@ class ArtType(Enum):
     IMAGE = GIF | PHOTO  # IMAGE = PHOTO + GIF
     ALL = GIF | PHOTO | VIDEO  # ALL = IMAGE + VIDEO
 
+
 def remove_nsfw(rows: list):
     """Pretty self explainatory
 
@@ -48,19 +53,22 @@ def remove_nsfw(rows: list):
 
     return rows
 
+
 def get_art_type(row) -> ArtType:
     if row['image'] == None:
         return ArtType.VIDEO
     elif row['image'].endswith('.gif'):
         return ArtType.GIF
     else:
-        return ArtType.IMAGE
+        return ArtType.PHOTO
+
 
 def assign_art_types(rows) -> list:
     for row in rows:
         art_type = get_art_type(row)
-        row['type'] = art_type.name
+        row['type'] = art_type
     return rows
+
 
 def retrieve_art_metadata(page=1, limit=100, sort_by: SortBy = SortBy.UPDATED) -> list:
     url = f'https://nftshowroom.com/api/market?page={page}&limit={limit}&sort_by={sort_by.value}'
@@ -71,6 +79,56 @@ def retrieve_art_metadata(page=1, limit=100, sort_by: SortBy = SortBy.UPDATED) -
 
     return request.json()
 
-def download_art_piece(piece):
+
+def download_art_piece(piece, master_dir='./dataset', video_dir='video', image_dir='image', gif_dir='gif'):
     """The art type needs to be assigned"""
-    pass
+
+
+    if piece['type'] == ArtType.VIDEO:
+        url = piece['video']
+    else:
+        url = piece['image']
+
+    file_name = url.split('/')[-1]
+
+    directories = {
+        ArtType.PHOTO: image_dir,
+        ArtType.GIF: gif_dir,
+        ArtType.VIDEO: video_dir
+    }
+
+    # Create a local path
+    path = os.path.join(master_dir, directories[piece['type']])
+    os.makedirs(path, exist_ok=True)
+    file_path = os.path.join(path, file_name)
+    
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(file_path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+    return file_path
+
+def csv_header():
+    return 'title,name,creator,art_series,price,symbol,likes,nsfw,tokens,year,rights,royalty,cid\r\n'
+
+def piece_to_string(piece):
+    #'title,name,creator,art_series,price,symbol,likes,nsfw,tokens,year,rights,royalty,cid'
+    return f"{piece['title']},{piece['name']},{piece['creator']},{piece['art_series']},{piece['price']},{piece['symbol']},{piece['reactions']['likes']},{piece['nsfw']},{piece['tokens']},{piece['year']},{piece['rights']},{piece['royalty']},{piece['cid']}\r\n"
+
+if __name__ == '__main__':
+    csv_file = open('dataset.csv', 'w')
+    csv_file.write(csv_header())
+
+    for page in range(1,25):
+        print(f'Downloading page {page}/25')
+        art_collection = retrieve_art_metadata(page=page)
+        
+        art_collection = assign_art_types(art_collection)
+        for piece in art_collection:
+            art_path = download_art_piece(piece)
+            piece['path'] = art_path
+
+            csv_file.write(piece_to_string(piece))
+        time.sleep(1)
