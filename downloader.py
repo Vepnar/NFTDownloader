@@ -111,11 +111,11 @@ def download_art_piece(piece, master_dir='./dataset', video_dir='video', image_d
     return file_path
 
 def csv_header():
-    return 'title,name,creator,art_series,price,symbol,likes,nsfw,tokens,year,rights,royalty,cid\r\n'
+    return 'title,name,creator,art_series,price,symbol,type,likes,nsfw,tokens,year,rights,royalty,cid\r\n'
 
 def piece_to_string(piece):
     #'title,name,creator,art_series,price,symbol,likes,nsfw,tokens,year,rights,royalty,cid'
-    return f"{piece['title']},{piece['name']},{piece['creator']},{piece['art_series']},{piece['price']},{piece['symbol']},{piece['reactions']['likes']},{piece['nsfw']},{piece['tokens']},{piece['year']},{piece['rights']},{piece['royalty']},{piece['cid']}\r\n"
+    return f"{piece['title']},{piece['name']},{piece['creator']},{piece['art_series']},{piece['price']},{piece['symbol']},{piece['type'].name},{piece['reactions']['likes']},{piece['nsfw']},{piece['tokens']},{piece['year']},{piece['rights']},{piece['royalty']},{piece['cid']}\r\n"
 
 if __name__ == '__main__':
     csv_file = open('dataset.csv', 'w')
@@ -131,4 +131,6 @@ if __name__ == '__main__':
             piece['path'] = art_path
 
             csv_file.write(piece_to_string(piece))
+        csv_file.flush()
         time.sleep(1)
+    csv_file.close()
