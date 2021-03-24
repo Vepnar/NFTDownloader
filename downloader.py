@@ -111,26 +111,36 @@ def download_art_piece(piece, master_dir='./dataset', video_dir='video', image_d
     return file_path
 
 def csv_header():
-    return 'title,name,creator,art_series,price,symbol,type,likes,nsfw,tokens,year,rights,royalty,cid\r\n'
+    return 'title,name,creator,art_series,price,symbol,type,likes,nsfw,tokens,year,rights,royalty,cid,path\r\n'
 
 def piece_to_string(piece):
-    p = lambda x: piece[x].strip(',') # Sorry for this
-    return f"{p('title')},{p('name')},{p('creator')},{p('art_series')},{piece['price']},{p('symbol')},{piece['type'].name},{piece['reactions']['likes']},{piece['nsfw']},{piece['tokens']},{piece['year']},{piece['rights']},{piece['royalty']},{piece['cid']}'\r\n"
+    p = lambda x: '"'+piece[x].strip(',"')+'"' # Sorry for this
+    return f"{p('title')},{p('name')},{p('creator')},{p('art_series')},{piece['price']},{p('symbol')},{piece['type'].name},{piece['reactions']['likes']},{piece['nsfw']},{piece['tokens']},{piece['year']},{piece['rights']},{piece['royalty']},{p('cid')},{p('path')}\r\n"
 
 if __name__ == '__main__':
+    attempts = 5
+    pages = 50
     csv_file = open('./dataset.csv', 'w')
     csv_file.write(csv_header())
 
-    for page in range(1,30):
-        print(f'Downloading page {page}/30')
+    for page in range(1,pages):
+        print(f'Downloading page {page}/{pages}')
         art_collection = retrieve_art_metadata(page=page)
         
         art_collection = assign_art_types(art_collection)
         for piece in art_collection:
-            art_path = download_art_piece(piece)
-            piece['path'] = art_path
+            for attempt in range(attempts): # Attempts
+                try:
+                    art_path = download_art_piece(piece)
+                    piece['path'] = art_path
 
-            csv_file.write(piece_to_string(piece))
+                    csv_file.write(piece_to_string(piece))
+                    break
+                except Exception as e:
+                    print(f'Downloading failed, attempts: {attempt+1}/{attempts}', e)
+                    time.sleep(5*attempt)
+
         csv_file.flush()
-        time.sleep(1)
+        print('sleeping...')
+        time.sleep(60)
     csv_file.close()
