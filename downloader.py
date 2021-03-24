@@ -114,15 +114,15 @@ def csv_header():
     return 'title,name,creator,art_series,price,symbol,type,likes,nsfw,tokens,year,rights,royalty,cid\r\n'
 
 def piece_to_string(piece):
-    #'title,name,creator,art_series,price,symbol,likes,nsfw,tokens,year,rights,royalty,cid'
-    return f"{piece['title']},{piece['name']},{piece['creator']},{piece['art_series']},{piece['price']},{piece['symbol']},{piece['type'].name},{piece['reactions']['likes']},{piece['nsfw']},{piece['tokens']},{piece['year']},{piece['rights']},{piece['royalty']},{piece['cid']}\r\n"
+    p = lambda x: piece[x].strip(',') # Sorry for this
+    return f"{p('title')},{p('name')},{p('creator')},{p('art_series')},{piece['price']},{p('symbol')},{piece['type'].name},{piece['reactions']['likes']},{piece['nsfw']},{piece['tokens']},{piece['year']},{piece['rights']},{piece['royalty']},{piece['cid']}'\r\n"
 
 if __name__ == '__main__':
-    csv_file = open('dataset.csv', 'w')
+    csv_file = open('./dataset.csv', 'w')
     csv_file.write(csv_header())
 
-    for page in range(1,25):
-        print(f'Downloading page {page}/25')
+    for page in range(1,30):
+        print(f'Downloading page {page}/30')
         art_collection = retrieve_art_metadata(page=page)
         
         art_collection = assign_art_types(art_collection)
