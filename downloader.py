@@ -131,8 +131,8 @@ def piece_to_string(piece) -> str:
     return f"{p('title')},{p('name')},{p('creator')},{p('art_series')},{piece['price']},{p('symbol')},{piece['type'].name},{piece['reactions']['likes']},{piece['nsfw']},{piece['tokens']},{piece['year']},{piece['rights']},{piece['royalty']},{p('cid')},{p('path')}\r\n"
 
 
-if __name__ == "__main__":
-    attempts = 5
+def main():
+    attempts = 5 # Attempts of downloads per art piece
     pages = 50  # Amount of pages that should be downloaded
     csv_file = open("./dataset.csv", "w")
     csv_file.write(csv_header())
@@ -165,3 +165,6 @@ if __name__ == "__main__":
         time.sleep(60)  # Timeout to prevent cloudflare from getting mad at us
     csv_file.flush()  # Not sure if I should do this
     csv_file.close()
+
+if __name__ == "__main__":
+    main()
