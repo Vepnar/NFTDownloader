@@ -89,7 +89,7 @@ def download_art_piece(piece, master_dir='./dataset', video_dir='video', image_d
     else:
         url = piece['image']
 
-    file_name = url.split('/')[-1]
+    file_name = ''.join([piece['cid'], '.', url.split('.')[-1]])
 
     directories = {
         ArtType.PHOTO: image_dir,
