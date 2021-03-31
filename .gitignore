@@ -1,5 +1,6 @@
 
-# Ignore testing filess
+# Ignore testing files
 *.json
 dataset/
 dataset.csv
+dataset.zip
