@@ -153,6 +153,7 @@ def main():
                     piece["path"] = art_path
 
                     csv_file.write(piece_to_string(piece))
+                    print('.')
                     break
                 except Exception as e:
                     print(
