@@ -16,6 +16,7 @@ NOTE:
 Author: Arjan de Haan (Vepnar)
 """
 import os
+import re
 import json
 import time
 import requests
@@ -55,13 +56,12 @@ def remove_nsfw(rows: list) -> str:
 
     return rows
 
-
 def get_art_type(row) -> ArtType:
-    if row["image"] == None:
+    if row["type"] == "video":
         return ArtType.VIDEO
-    elif row["image"].endswith(".gif"):
-        return ArtType.GIF
     else:
+        if row["file"].endswith(".gif"):
+            return ArtType.GIF
         return ArtType.PHOTO
 
 
@@ -73,7 +73,7 @@ def assign_art_types(rows: list) -> list:
 
 
 def retrieve_art_metadata(page: int = 1, limit: int = 100, sort_by: SortBy = SortBy.UPDATED) -> list:
-    url = f"https://nftshowroom.com/api/market?page={page}&limit={limit}&sort_by={sort_by.value}"
+    url = f"https://nftshowroom.com/api/market/listings?page={page}&limit={limit}&sort_by={sort_by.value}"
 
     request = requests.get(url)
     if request.status_code != 200:
@@ -87,11 +87,7 @@ def download_art_piece(
 ) -> str:
     """The art type needs to be assigned"""
 
-    # Video and images are stored in different places
-    if piece["type"] == ArtType.VIDEO:
-        url = piece["video"]
-    else:
-        url = piece["image"]
+    url = piece['file']
 
     # Create a path based on the cid and the given file extension
     # This is done since kaggle doesn't allow "strange" chars in the the file names.
@@ -121,14 +117,14 @@ def download_art_piece(
 
 def csv_header() -> str:
     """Return the header that is used for the csv file"""
-    return "title,name,creator,art_series,price,symbol,type,likes,nsfw,tokens,year,rights,royalty,cid,path\r\n"
+    return "title,name,creator,art_series,price,symbol,type,nsfw,tokens,cid,path\r\n"
 
 
 def piece_to_string(piece) -> str:
     """Convert the art piece object into a string that could be added to the csv file
     """
     def p(x): return '"' + piece[x].strip(',"') + '"'  # Sorry for this
-    return f"{p('title')},{p('name')},{p('creator')},{p('art_series')},{piece['price']},{p('symbol')},{piece['type'].name},{piece['reactions']['likes']},{piece['nsfw']},{piece['tokens']},{piece['year']},{piece['rights']},{piece['royalty']},{p('cid')},{p('path')}\r\n"
+    return f"{p('title')},{p('name')},{p('creator')},{p('art_series')},{piece['price']},{p('symbol')},{piece['type'].name},{piece['nsfw']},{piece['tokens']},{p('cid')},{p('path')}\r\n"
 
 
 def main():
@@ -147,6 +143,10 @@ def main():
 
         art_collection = assign_art_types(art_collection)
         for piece in art_collection:
+
+            # CID has been removed thus we parse it ourselfs
+            piece["cid"] = re.findall(r'com\/([^\/.]+\S)\.\w*', piece['file'])[0]
+
             for attempt in range(attempts):  # Attempts to download  the file
                 try:
                     art_path = download_art_piece(piece)
